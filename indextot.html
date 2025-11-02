@@ -13,13 +13,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
       body {
-        padding: 0;
-        margin: 0;
+        padding: 20px;
         background-color: #f8f9fa;
         font-family: "Segoe UI", sans-serif;
-      }
-      .container {
-        padding: 20px;
       }
       h3,
       h5 {
@@ -52,41 +48,17 @@
       .card {
         border-radius: 12px;
       }
-      /* Top ticker - no margins, always visible */
       .tradingview-widget-container {
-        margin: 0;
-        padding: 0;
+        margin: -20px -20px 20px -20px;
         overflow: hidden;
-        position: relative;
-        z-index: 1000;
       }
       .tradingview-widget-container iframe {
         border: none;
-        display: block;
-      }
-      /* Bottom ticker - left to right (reversed), no margins */
-      .tradingview-widget-container-bottom {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        position: relative;
-        transform: scaleX(-1); /* Flip the entire container for left-to-right animation */
-      }
-      .tradingview-widget-container-bottom iframe {
-        border: none;
-        display: block;
-        transform: scaleX(-1); /* Flip iframe back so text reads correctly */
-      }
-      /* Ensure tickers keep running even when not visible */
-      .tradingview-widget-container,
-      .tradingview-widget-container-bottom {
-        will-change: transform;
-        backface-visibility: hidden;
       }
     </style>
   </head>
   <body>
-    <!-- TradingView Ticker Tape Widget (Top) -->
+    <!-- TradingView Ticker Tape Widget -->
     <div class="tradingview-widget-container">
       <div class="tradingview-widget-container__widget"></div>
     </div>
@@ -263,19 +235,6 @@
           📥 Backup JSON
         </button>
         <button
-          class="btn btn-warning btn-sm me-2"
-          onclick="document.getElementById('importJSON').click()"
-        >
-          📤 Import JSON
-        </button>
-        <input
-          type="file"
-          id="importJSON"
-          accept=".json"
-          style="display: none"
-          onchange="importFromJSON(event)"
-        />
-        <button
           class="btn btn-success btn-sm me-2"
           onclick="downloadBackupPNG()"
         >
@@ -341,11 +300,6 @@
           </li>
         </ul>
       </div>
-    </div>
-
-    <!-- Bottom Ticker (Left to Right - Opposite Direction) -->
-    <div class="tradingview-widget-container-bottom">
-      <div class="tradingview-widget-container__widget-bottom"></div>
     </div>
 
     <!-- Edit Trade Modal -->
@@ -445,7 +399,128 @@
         : 100;
       let trades = localStorage.getItem("trades")
         ? JSON.parse(localStorage.getItem("trades"))
-        : []; // Start with empty array - no hardcoded trades
+        : [
+            {
+              tgl: "01/11",
+              pair: "WIFUSDT",
+              entry: "short",
+              amount: 2,
+              leverage: 25,
+              entryPrice: 0.5568,
+              takeProfit: 0.529,
+              stoploss: 0.5736,
+              status: "profit",
+              mode: "future",
+            },
+            {
+              tgl: "01/11",
+              pair: "FARTCOINUSDT",
+              entry: "short",
+              amount: 2,
+              leverage: 25,
+              entryPrice: 0.325,
+              takeProfit: 0.2855,
+              stoploss: 0.34,
+              status: "loss",
+              mode: "future",
+            },
+            {
+              tgl: "01/11",
+              pair: "TAOUSDT",
+              entry: "short",
+              amount: 2,
+              leverage: 25,
+              entryPrice: 415.8,
+              takeProfit: 390.3,
+              stoploss: 428.8,
+              status: "profit",
+              mode: "future",
+            },
+            {
+              tgl: "01/11",
+              pair: "TAOUSDT",
+              entry: "long",
+              amount: 2,
+              leverage: 25,
+              entryPrice: 48.77,
+              takeProfit: 52.51,
+              stoploss: 47.49,
+              status: "loss",
+              mode: "future",
+            },
+            {
+              tgl: "01/11",
+              pair: "AAVEUSDT",
+              entry: "short",
+              amount: 2,
+              leverage: 25,
+              entryPrice: 240.82,
+              takeProfit: 224.17,
+              stoploss: 245.05,
+              status: "profit",
+              mode: "future",
+            },
+            {
+              tgl: "01/11",
+              pair: "DOGEUSDT",
+              entry: "short",
+              amount: 2,
+              leverage: 25,
+              entryPrice: 0.19666,
+              takeProfit: 0.17621,
+              stoploss: 0.20279,
+              status: "profit",
+              mode: "future",
+            },
+            {
+              tgl: "01/11",
+              pair: "ETHUSDT",
+              entry: "short",
+              amount: 2,
+              leverage: 25,
+              entryPrice: 3902.12,
+              takeProfit: 3709.8,
+              stoploss: 3982.12,
+              status: "loss",
+              mode: "future",
+            },
+            {
+              tgl: "01/11",
+              pair: "EURUSDT",
+              entry: "long",
+              amount: 0.58,
+              leverage: 2000,
+              entryPrice: 1.15987,
+              takeProfit: 1.16521,
+              stoploss: 1.15801,
+              status: "profit",
+              mode: "future",
+            },
+            {
+              tgl: "01/11",
+              pair: "EURUSDT",
+              entry: "short",
+              amount: 0.58,
+              leverage: 2000,
+              entryPrice: 1.15937,
+              takeProfit: 1.15442,
+              stoploss: 1.16165,
+              status: "profit",
+              mode: "future",
+            },
+            {
+              tgl: "01/11",
+              pair: "EURUSDT",
+              entry: "short",
+              amount: 0.58,
+              leverage: 6400,
+              entryPrice: 1.16244,
+              takeProfit: 1.16106,
+              stoploss: 1.15809,
+              status: "profit",
+              mode: "future",
+            },
+          ];
 
       // Set mode on load
       document.addEventListener("DOMContentLoaded", function () {
@@ -902,54 +977,6 @@
           });
       }
 
-      // Import JSON function
-      function importFromJSON(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          try {
-            const data = JSON.parse(e.target.result);
-            
-            // Validate data structure
-            if (!data.trades || !Array.isArray(data.trades)) {
-              alert("Format JSON tidak valid! File harus berisi array 'trades'.");
-              return;
-            }
-
-            // Confirm import
-            const confirmMsg = `Import ${data.trades.length} trades?\n\nPeringatan: Ini akan MENGGANTI semua data yang ada!`;
-            if (!confirm(confirmMsg)) {
-              return;
-            }
-
-            // Import data
-            if (data.modalAwal !== undefined) {
-              modalAwal = parseFloat(data.modalAwal);
-              document.getElementById("initialModal").value = modalAwal;
-            }
-            
-            trades = data.trades;
-            
-            // Save to localStorage
-            updateLocalStorage();
-            updateJournal();
-            
-            alert(`✅ Berhasil import ${trades.length} trades!`);
-            
-            // Reset file input
-            event.target.value = '';
-            
-          } catch (error) {
-            console.error("Error parsing JSON:", error);
-            alert("❌ Gagal membaca file JSON. Pastikan format file benar.");
-          }
-        };
-        
-        reader.readAsText(file);
-      }
-
       updateJournal();
 
       // Shuffle array function
@@ -980,23 +1007,12 @@
 
         // Extract unique pairs from user's trades
         const userTradeSymbols = [];
-        const specialCoins = {
-          'FARTCOINUSDT': 'BYBIT:FARTCOINUSDT',
-          'WIFUSDT': 'BINANCE:WIFUSDT',
-          'BONKUSDT': 'BINANCE:BONKUSDT',
-          'FLOKIUSDT': 'BINANCE:FLOKIUSDT'
-        };
-        
         trades.forEach((trade) => {
           const pair = trade.pair.toUpperCase();
           let tvSymbol = "";
 
-          // Check if it's a special coin with specific exchange
-          if (specialCoins[pair]) {
-            tvSymbol = specialCoins[pair];
-          }
           // Crypto pairs (ends with USDT)
-          else if (pair.includes("USDT")) {
+          if (pair.includes("USDT")) {
             tvSymbol = `BINANCE:${pair}`;
           }
           // Forex pairs
@@ -1039,7 +1055,7 @@
           { proName: "BINANCE:AVAXUSDT", title: "AVAX/USDT" },
           { proName: "BINANCE:ADAUSDT", title: "ADA/USDT" },
           { proName: "BINANCE:DOTUSDT", title: "DOT/USDT" },
-          { proName: "BINANCE:POLUSDT", title: "POL/USDT" },
+          { proName: "BINANCE:MATICUSDT", title: "MATIC/USDT" },
           { proName: "BINANCE:LINKUSDT", title: "LINK/USDT" },
           { proName: "BINANCE:UNIUSDT", title: "UNI/USDT" },
           { proName: "BINANCE:ATOMUSDT", title: "ATOM/USDT" },
@@ -1117,74 +1133,9 @@
       // Ticker will continue running when switching tabs (no reset)
       // Only refreshes when adding NEW trade or manually refreshing page
       if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", function() {
-          loadTradingViewWidget();
-          loadBottomTicker();
-        });
+        document.addEventListener("DOMContentLoaded", loadTradingViewWidget);
       } else {
         loadTradingViewWidget();
-        loadBottomTicker();
-      }
-
-      // Bottom Ticker (Left to Right - flipped with CSS, Fully Randomized)
-      function loadBottomTicker() {
-        const container = document.querySelector('.tradingview-widget-container__widget-bottom');
-        container.innerHTML = '';
-        
-        // Get all available coins (randomized, no fixed order)
-        const allCoins = [
-          { "proName": "BINANCE:BTCUSDT", "title": "BTC/USDT" },
-          { "proName": "BINANCE:ETHUSDT", "title": "ETH/USDT" },
-          { "proName": "BINANCE:BNBUSDT", "title": "BNB/USDT" },
-          { "proName": "BINANCE:SOLUSDT", "title": "SOL/USDT" },
-          { "proName": "BINANCE:XRPUSDT", "title": "XRP/USDT" },
-          { "proName": "BINANCE:ADAUSDT", "title": "ADA/USDT" },
-          { "proName": "BINANCE:DOGEUSDT", "title": "DOGE/USDT" },
-          { "proName": "BINANCE:AVAXUSDT", "title": "AVAX/USDT" },
-          { "proName": "BINANCE:DOTUSDT", "title": "DOT/USDT" },
-          { "proName": "BINANCE:POLUSDT", "title": "POL/USDT" },
-          { "proName": "BINANCE:LINKUSDT", "title": "LINK/USDT" },
-          { "proName": "BINANCE:UNIUSDT", "title": "UNI/USDT" },
-          { "proName": "BINANCE:ATOMUSDT", "title": "ATOM/USDT" },
-          { "proName": "BINANCE:LTCUSDT", "title": "LTC/USDT" },
-          { "proName": "BINANCE:NEARUSDT", "title": "NEAR/USDT" },
-          { "proName": "BINANCE:APTUSDT", "title": "APT/USDT" },
-          { "proName": "BINANCE:ARBUSDT", "title": "ARB/USDT" },
-          { "proName": "BINANCE:OPUSDT", "title": "OP/USDT" },
-          { "proName": "BINANCE:INJUSDT", "title": "INJ/USDT" },
-          { "proName": "BINANCE:SUIUSDT", "title": "SUI/USDT" },
-          { "proName": "BINANCE:PEPEUSDT", "title": "PEPE/USDT" },
-          { "proName": "BINANCE:SHIBUSDT", "title": "SHIB/USDT" },
-          { "proName": "OANDA:XAUUSD", "title": "XAU/USD" },
-          { "proName": "OANDA:XAGUSD", "title": "XAG/USD" },
-          { "proName": "FX_IDC:EURUSD", "title": "EUR/USD" },
-          { "proName": "FX:GBPUSD", "title": "GBP/USD" },
-          { "proName": "FX:USDJPY", "title": "USD/JPY" },
-          { "proName": "FX:AUDUSD", "title": "AUD/USD" },
-          { "proName": "FX:USDCAD", "title": "USD/CAD" },
-          { "proName": "FX:NZDUSD", "title": "NZD/USD" },
-          { "proName": "FOREXCOM:SPXUSD", "title": "S&P 500" },
-          { "proName": "FOREXCOM:NSXUSD", "title": "NASDAQ" },
-          { "proName": "TVC:DXY", "title": "DXY" }
-        ];
-        
-        // Shuffle completely random
-        const randomizedSymbols = shuffleArray(allCoins);
-        
-        const script = document.createElement('script');
-        script.type = 'text/javascript';
-        script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js';
-        script.async = true;
-        script.innerHTML = JSON.stringify({
-          "symbols": randomizedSymbols,
-          "showSymbolLogo": true,
-          "colorTheme": "light",
-          "isTransparent": false,
-          "displayMode": "adaptive",
-          "locale": "en",
-          "largeChartUrl": ""
-        });
-        container.appendChild(script);
       }
     </script>
   </body>
