@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trading Journal</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+      body {
+        padding: 20px;
+        background-color: #f8f9fa;
+        font-family: "Segoe UI", sans-serif;
+      }
+      h3,
+      h5 {
+        font-weight: 600;
+      }
+      .table th,
+      .table td {
+        vertical-align: middle;
+        text-align: center;
+        padding: 0.4rem;
+      }
+      .profit {
+        color: green;
+      }
+      .loss {
+        color: red;
+      }
+      .form-control,
+      .form-select {
+        font-size: 0.9rem;
+        padding: 0.3rem 0.5rem;
+      }
+      .btn-sm {
+        font-size: 0.8rem;
+      }
+      .chart-container {
+        width: 280px;
+        margin: auto;
+      }
+      .card {
+        border-radius: 12px;
+      }
+      .tradingview-widget-container {
+        margin: -20px -20px 20px -20px;
+        overflow: hidden;
+      }
+      .tradingview-widget-container iframe {
+        border: none;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- TradingView Ticker Tape Widget -->
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+    </div>
+
+    <div class="container">
+      <h3 class="text-center mb-4">📈 Trading Journal</h3>
+
+      <div class="card p-3 mb-3 shadow-sm">
+        <div class="mb-2">
+          <label class="form-label fw-bold">Trading Mode:</label>
+          <div class="btn-group" role="group">
+            <input
+              type="radio"
+              class="btn-check"
+              name="tradeMode"
+              id="modeFuture"
+              value="future"
+              checked
+              autocomplete="off"
+              onchange="switchMode()"
+            />
+            <label class="btn btn-outline-primary btn-sm" for="modeFuture"
+              >🚀 Crypto Future</label
+            >
+
+            <input
+              type="radio"
+              class="btn-check"
+              name="tradeMode"
+              id="modeForex"
+              value="forex"
+              autocomplete="off"
+              onchange="switchMode()"
+            />
+            <label class="btn btn-outline-success btn-sm" for="modeForex"
+              >💱 Forex</label
+            >
+          </div>
+        </div>
+
+        <div class="row g-2">
+          <div class="col">
+            <input
+              type="text"
+              id="pair"
+              class="form-control"
+              placeholder="Pair (e.g., BTCUSDT / XAUUSD)"
+            />
+          </div>
+          <div class="col">
+            <select id="entry" class="form-select">
+              <option value="long">Long</option>
+              <option value="short">Short</option>
+            </select>
+          </div>
+          <div class="col">
+            <input
+              type="number"
+              step="0.01"
+              id="amount"
+              class="form-control"
+              placeholder="Amount ($) / Lot"
+            />
+          </div>
+          <div class="col">
+            <input
+              type="number"
+              id="leverage"
+              class="form-control"
+              placeholder="Leverage"
+            />
+          </div>
+          <div class="col">
+            <input
+              type="number"
+              step="any"
+              id="entryPrice"
+              class="form-control"
+              placeholder="Entry Price"
+            />
+          </div>
+          <div class="col">
+            <input
+              type="number"
+              step="any"
+              id="takeProfit"
+              class="form-control"
+              placeholder="Take Profit"
+            />
+          </div>
+          <div class="col">
+            <input
+              type="number"
+              step="any"
+              id="stoploss"
+              class="form-control"
+              placeholder="Stop Loss"
+            />
+          </div>
+          <div class="col">
+            <select id="status" class="form-select">
+              <option value="profit">Profit</option>
+              <option value="loss">Loss</option>
+            </select>
+          </div>
+          <div class="col">
+            <button class="btn btn-success btn-sm" onclick="addTrade()">
+              + Add Trade
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Initial Balance ($)</label>
+        <input
+          type="number"
+          id="initialModal"
+          class="form-control w-auto d-inline-block"
+          onchange="updateModal()"
+        />
+      </div>
+
+      <div class="row mb-4">
+        <div class="col-md-6">
+          <p>
+            <strong>Current Balance:</strong> $<span id="modalAwalDisplay"
+              >0.00</span
+            >
+          </p>
+          <p>
+            Total Trades: <span id="totalTrade">0</span> | Win:
+            <span id="winTrade">0</span> | Loss: <span id="lossTrade">0</span>
+          </p>
+          <p>
+            Winrate: <span id="winRate">0</span>% | PNL: $<span id="totalPNL"
+              >0.00</span
+            >
+          </p>
+        </div>
+        <div class="col-md-6 chart-container">
+          <canvas id="winLossChart"></canvas>
+        </div>
+      </div>
+
+      <div id="tableContainer">
+        <table class="table table-bordered table-sm table-striped shadow-sm">
+          <thead class="table-dark">
+            <tr>
+              <th>Date</th>
+              <th>Pair</th>
+              <th>Type</th>
+              <th>Amount/Lot</th>
+              <th>Lev</th>
+              <th>Entry</th>
+              <th>TP</th>
+              <th>SL</th>
+              <th>RR</th>
+              <th>Result</th>
+              <th>Balance</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="journalBody"></tbody>
+        </table>
+      </div>
+
+      <div class="mb-3">
+        <button
+          class="btn btn-primary btn-sm me-2"
+          onclick="downloadBackupJSON()"
+        >
+          📥 Backup JSON
+        </button>
+        <button
+          class="btn btn-success btn-sm me-2"
+          onclick="downloadBackupPNG()"
+        >
+          🖼️ Backup PNG
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="downloadBackupPDF()">
+          📄 Backup PDF
+        </button>
+      </div>
+
+      <div class="card p-3 mt-5 bg-light">
+        <h5>📌 Trading Rules</h5>
+        <ul>
+          <li>
+            <strong>🎯 Dynamic Ticker:</strong> Ticker di atas menampilkan harga
+            real-time pair yang pernah Anda trade + top volatile coins
+            (gainers/losers).
+            <ul>
+              <li>
+                Urutan <strong>ACAK setiap refresh</strong> (kecuali BTC, ETH,
+                XAU selalu di depan)
+              </li>
+              <li>
+                Ticker <strong>tetap berjalan</strong> saat ganti tab - tidak
+                reset dari awal
+              </li>
+              <li>
+                Auto-update hanya saat menambah trade baru dengan pair baru
+              </li>
+            </ul>
+          </li>
+          <li>Gunakan Support & Resistance sebagai dasar analisa.</li>
+          <li>Utamakan zona Supply dan Demand sebelum entry.</li>
+          <li>
+            Urutan eksekusi: Tentukan <strong>Entry</strong>, lalu
+            <strong>TP</strong>, baru <strong>SL</strong>.
+          </li>
+          <li>RR dihitung otomatis, dibulatkan untuk kejelasan.</li>
+          <li>
+            <strong>Forex Mode:</strong>
+            <ul>
+              <li>Gunakan lot size (0.01, 0.1, 1.0, dst) - bukan USD amount</li>
+              <li>
+                <strong>XAUUSD/Gold:</strong> 0.01 lot = $1 per $1 move, 0.1 lot
+                = $10 per $1 move
+              </li>
+              <li>
+                <strong>Major pairs (EURUSD, GBPUSD):</strong> 0.01 lot = $0.10
+                per pip, 0.1 lot = $1 per pip
+              </li>
+              <li>
+                <strong>JPY pairs:</strong> Pip value ~$9.17 per lot (tergantung
+                rate)
+              </li>
+              <li>
+                Leverage hanya menentukan margin, tidak mempengaruhi profit/loss
+              </li>
+            </ul>
+          </li>
+          <li>
+            <strong>Future Mode:</strong> Amount dalam USD × Leverage = Position
+            Size. Profit/loss berdasarkan % change.
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Edit Trade Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">✏️ Edit Trade</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="editIndex" />
+            <div class="mb-2">
+              <label class="form-label">Pair</label>
+              <input type="text" id="editPair" class="form-control" />
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Type</label>
+              <select id="editEntry" class="form-select">
+                <option value="long">Long</option>
+                <option value="short">Short</option>
+              </select>
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Amount/Lot</label>
+              <input
+                type="number"
+                step="0.01"
+                id="editAmount"
+                class="form-control"
+              />
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Leverage</label>
+              <input type="number" id="editLeverage" class="form-control" />
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Entry Price</label>
+              <input
+                type="number"
+                step="any"
+                id="editEntryPrice"
+                class="form-control"
+              />
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Take Profit</label>
+              <input
+                type="number"
+                step="any"
+                id="editTakeProfit"
+                class="form-control"
+              />
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Stop Loss</label>
+              <input
+                type="number"
+                step="any"
+                id="editStoploss"
+                class="form-control"
+              />
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Status</label>
+              <select id="editStatus" class="form-select">
+                <option value="profit">Profit</option>
+                <option value="loss">Loss</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+            <button type="button" class="btn btn-primary" onclick="saveEdit()">
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      let currentMode = localStorage.getItem("tradeMode") || "future";
+      let modalAwal = localStorage.getItem("modalAwal")
+        ? parseFloat(localStorage.getItem("modalAwal"))
+        : 100;
+      let trades = localStorage.getItem("trades")
+        ? JSON.parse(localStorage.getItem("trades"))
+        : [
+            {
+              tgl: "01/11",
+              pair: "WIFUSDT",
+              entry: "short",
+              amount: 2,
+              leverage: 25,
+              entryPrice: 0.5568,
+              takeProfit: 0.529,
+              stoploss: 0.5736,
+              status: "profit",
+              mode: "future",
+            },
+            {
+              tgl: "01/11",
+              pair: "FARTCOINUSDT",
+              entry: "short",
+              amount: 2,
+              leverage: 25,
+              entryPrice: 0.325,
+              takeProfit: 0.2855,
+              stoploss: 0.34,
+              status: "loss",
+              mode: "future",
+            },
+            {
+              tgl: "01/11",
+              pair: "TAOUSDT",
+              entry: "short",
+              amount: 2,
+              leverage: 25,
+              entryPrice: 415.8,
+              takeProfit: 390.3,
+              stoploss: 428.8,
+              status: "profit",
+              mode: "future",
+            },
+            {
+              tgl: "01/11",
+              pair: "TAOUSDT",
+              entry: "long",
+              amount: 2,
+              leverage: 25,
+              entryPrice: 48.77,
+              takeProfit: 52.51,
+              stoploss: 47.49,
+              status: "loss",
+              mode: "future",
+            },
+            {
+              tgl: "01/11",
+              pair: "AAVEUSDT",
+              entry: "short",
+              amount: 2,
+              leverage: 25,
+              entryPrice: 240.82,
+              takeProfit: 224.17,
+              stoploss: 245.05,
+              status: "profit",
+              mode: "future",
+            },
+            {
+              tgl: "01/11",
+              pair: "DOGEUSDT",
+              entry: "short",
+              amount: 2,
+              leverage: 25,
+              entryPrice: 0.19666,
+              takeProfit: 0.17621,
+              stoploss: 0.20279,
+              status: "profit",
+              mode: "future",
+            },
+            {
+              tgl: "01/11",
+              pair: "ETHUSDT",
+              entry: "short",
+              amount: 2,
+              leverage: 25,
+              entryPrice: 3902.12,
+              takeProfit: 3709.8,
+              stoploss: 3982.12,
+              status: "loss",
+              mode: "future",
+            },
+            {
+              tgl: "01/11",
+              pair: "EURUSDT",
+              entry: "long",
+              amount: 0.58,
+              leverage: 2000,
+              entryPrice: 1.15987,
+              takeProfit: 1.16521,
+              stoploss: 1.15801,
+              status: "profit",
+              mode: "future",
+            },
+            {
+              tgl: "01/11",
+              pair: "EURUSDT",
+              entry: "short",
+              amount: 0.58,
+              leverage: 2000,
+              entryPrice: 1.15937,
+              takeProfit: 1.15442,
+              stoploss: 1.16165,
+              status: "profit",
+              mode: "future",
+            },
+            {
+              tgl: "01/11",
+              pair: "EURUSDT",
+              entry: "short",
+              amount: 0.58,
+              leverage: 6400,
+              entryPrice: 1.16244,
+              takeProfit: 1.16106,
+              stoploss: 1.15809,
+              status: "profit",
+              mode: "future",
+            },
+          ];
+
+      // Set mode on load
+      document.addEventListener("DOMContentLoaded", function () {
+        if (currentMode === "forex") {
+          document.getElementById("modeForex").checked = true;
+        } else {
+          document.getElementById("modeFuture").checked = true;
+        }
+        switchMode();
+      });
+
+      function switchMode() {
+        const mode = document.querySelector(
+          'input[name="tradeMode"]:checked'
+        ).value;
+        currentMode = mode;
+        localStorage.setItem("tradeMode", mode);
+
+        const amountInput = document.getElementById("amount");
+
+        if (mode === "forex") {
+          amountInput.placeholder = "Lot (e.g., 0.01, 0.1, 1.0)";
+        } else {
+          amountInput.placeholder = "Amount ($)";
+        }
+      }
+
+      function updateLocalStorage() {
+        localStorage.setItem("modalAwal", modalAwal);
+        localStorage.setItem("trades", JSON.stringify(trades));
+        localStorage.setItem("tradeMode", currentMode);
+      }
+
+      function updateModal() {
+        modalAwal = parseFloat(document.getElementById("initialModal").value);
+        updateLocalStorage();
+        updateJournal();
+      }
+
+      document.getElementById("initialModal").value = modalAwal;
+      document.getElementById("modalAwalDisplay").textContent =
+        modalAwal.toFixed(2);
+
+      function addTrade() {
+        const pair = document.getElementById("pair").value.toUpperCase();
+        const entry = document.getElementById("entry").value;
+        const amount = parseFloat(document.getElementById("amount").value);
+        const leverage = parseInt(document.getElementById("leverage").value);
+        const entryPrice = parseFloat(
+          document.getElementById("entryPrice").value
+        );
+        const stoploss = parseFloat(document.getElementById("stoploss").value);
+        const takeProfit = parseFloat(
+          document.getElementById("takeProfit").value
+        );
+        const status = document.getElementById("status").value;
+        const mode = currentMode;
+
+        if (
+          !pair ||
+          !entry ||
+          isNaN(amount) ||
+          isNaN(leverage) ||
+          isNaN(entryPrice) ||
+          isNaN(stoploss) ||
+          isNaN(takeProfit)
+        ) {
+          alert("Isi semua field trade dengan benar.");
+          return;
+        }
+        const now = new Date();
+        const tgl = `${String(now.getDate()).padStart(2, "0")}/${String(
+          now.getMonth() + 1
+        ).padStart(2, "0")}`;
+        const trade = {
+          tgl,
+          pair,
+          entry,
+          amount,
+          leverage,
+          entryPrice,
+          stoploss,
+          takeProfit,
+          status,
+          mode,
+        };
+        trades.push(trade);
+        updateLocalStorage();
+        updateJournal();
+
+        // Clear form fields
+        document.getElementById("pair").value = "";
+        document.getElementById("amount").value = "";
+        document.getElementById("leverage").value = "";
+        document.getElementById("entryPrice").value = "";
+        document.getElementById("stoploss").value = "";
+        document.getElementById("takeProfit").value = "";
+
+        // Update ticker only when adding NEW trade with new pair
+        loadTradingViewWidget();
+      }
+
+      function deleteTrade(index) {
+        if (confirm("Hapus trade ini?")) {
+          trades.splice(index, 1);
+          updateLocalStorage();
+          updateJournal();
+        }
+      }
+
+      function editTrade(index) {
+        const trade = trades[index];
+        document.getElementById("editIndex").value = index;
+        document.getElementById("editPair").value = trade.pair;
+        document.getElementById("editEntry").value = trade.entry;
+        document.getElementById("editAmount").value = trade.amount;
+        document.getElementById("editLeverage").value = trade.leverage;
+        document.getElementById("editEntryPrice").value = trade.entryPrice;
+        document.getElementById("editTakeProfit").value = trade.takeProfit;
+        document.getElementById("editStoploss").value = trade.stoploss;
+        document.getElementById("editStatus").value = trade.status;
+
+        const modal = new bootstrap.Modal(document.getElementById("editModal"));
+        modal.show();
+      }
+
+      function saveEdit() {
+        const index = parseInt(document.getElementById("editIndex").value);
+        const pair = document.getElementById("editPair").value.toUpperCase();
+        const entry = document.getElementById("editEntry").value;
+        const amount = parseFloat(document.getElementById("editAmount").value);
+        const leverage = parseInt(
+          document.getElementById("editLeverage").value
+        );
+        const entryPrice = parseFloat(
+          document.getElementById("editEntryPrice").value
+        );
+        const takeProfit = parseFloat(
+          document.getElementById("editTakeProfit").value
+        );
+        const stoploss = parseFloat(
+          document.getElementById("editStoploss").value
+        );
+        const status = document.getElementById("editStatus").value;
+
+        if (
+          !pair ||
+          !entry ||
+          isNaN(amount) ||
+          isNaN(leverage) ||
+          isNaN(entryPrice) ||
+          isNaN(takeProfit) ||
+          isNaN(stoploss)
+        ) {
+          alert("Isi semua field dengan benar.");
+          return;
+        }
+
+        // Update trade
+        trades[index].pair = pair;
+        trades[index].entry = entry;
+        trades[index].amount = amount;
+        trades[index].leverage = leverage;
+        trades[index].entryPrice = entryPrice;
+        trades[index].takeProfit = takeProfit;
+        trades[index].stoploss = stoploss;
+        trades[index].status = status;
+
+        updateLocalStorage();
+        updateJournal();
+
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(
+          document.getElementById("editModal")
+        );
+        modal.hide();
+      }
+
+      function calculateResult(trade) {
+        const tradeMode = trade.mode || "future";
+
+        if (tradeMode === "forex") {
+          // Forex calculation dengan lot
+          return calculateForexResult(trade);
+        } else {
+          // Future calculation (existing)
+          return calculateFutureResult(trade);
+        }
+      }
+
+      function calculateFutureResult(trade) {
+        const size = trade.amount * trade.leverage;
+        let profit, loss;
+        if (trade.entry === "long") {
+          profit = trade.takeProfit - trade.entryPrice;
+          loss = trade.entryPrice - trade.stoploss;
+        } else {
+          profit = trade.entryPrice - trade.takeProfit;
+          loss = trade.stoploss - trade.entryPrice;
+        }
+        const rr = Math.round(profit / loss) + ":1";
+        const result =
+          trade.status === "profit"
+            ? (profit / trade.entryPrice) * size
+            : -(loss / trade.entryPrice) * size;
+        return { rr, result, isWin: trade.status === "profit" };
+      }
+
+      function calculateForexResult(trade) {
+        const pair = trade.pair.toUpperCase();
+        const lot = trade.amount;
+
+        // Contract size untuk forex
+        const contractSize = 100000; // 1 standard lot = 100,000 units
+
+        // Tentukan pip multiplier dan pip value berdasarkan pair
+        let pipMultiplier = 0.0001; // Default untuk major pairs (4 decimal)
+        let pipValue = 10; // Default pip value untuk 1 lot major pairs (USD account)
+
+        // Gold/XAU pairs - 2 decimal places
+        if (pair.includes("XAU") || pair.includes("GOLD")) {
+          pipMultiplier = 0.1; // 1 pip = 0.1 untuk gold
+          pipValue = 1; // 1 pip per 0.01 lot = $1
+        }
+        // JPY pairs - 2 decimal places
+        else if (pair.includes("JPY")) {
+          pipMultiplier = 0.01; // 1 pip = 0.01 untuk JPY pairs
+          pipValue = 9.17; // Approximate, tergantung USDJPY rate
+        }
+        // Exotic/minor pairs - 4 decimal places
+        else {
+          pipMultiplier = 0.0001; // 1 pip = 0.0001
+          pipValue = 10; // Standard pip value
+        }
+
+        // Calculate price difference in pips
+        let profitPips, lossPips;
+
+        if (trade.entry === "long") {
+          profitPips = (trade.takeProfit - trade.entryPrice) / pipMultiplier;
+          lossPips = (trade.entryPrice - trade.stoploss) / pipMultiplier;
+        } else {
+          profitPips = (trade.entryPrice - trade.takeProfit) / pipMultiplier;
+          lossPips = (trade.stoploss - trade.entryPrice) / pipMultiplier;
+        }
+
+        // Calculate RR
+        const rr =
+          lossPips > 0 ? Math.round(profitPips / lossPips) + ":1" : "0:1";
+
+        // Calculate dollar value: Lot × Pip Value × Pips
+        // For XAU/GOLD: Special calculation
+        let profitValue, lossValue;
+
+        if (pair.includes("XAU") || pair.includes("GOLD")) {
+          // XAUUSD: $1 per 0.01 lot per $0.1 move
+          // So for 0.1 lot: $10 per $1 move
+          profitValue = lot * 100 * (trade.takeProfit - trade.entryPrice);
+          lossValue = lot * 100 * Math.abs(trade.entryPrice - trade.stoploss);
+
+          if (trade.entry === "short") {
+            profitValue = lot * 100 * (trade.entryPrice - trade.takeProfit);
+            lossValue = lot * 100 * Math.abs(trade.stoploss - trade.entryPrice);
+          }
+        } else {
+          // Regular forex pairs
+          profitValue = lot * pipValue * profitPips;
+          lossValue = lot * pipValue * lossPips;
+        }
+
+        const result = trade.status === "profit" ? profitValue : -lossValue;
+
+        return { rr, result, isWin: trade.status === "profit" };
+      }
+
+      function updateJournal() {
+        const tbody = document.getElementById("journalBody");
+        tbody.innerHTML = "";
+        let win = 0,
+          loss = 0,
+          saldo = modalAwal,
+          totalPNL = 0;
+        trades.forEach((trade, i) => {
+          const { rr, result, isWin } = calculateResult(trade);
+          totalPNL += result;
+          if (isWin) win++;
+          else loss++;
+          saldo += result;
+          const row = document.createElement("tr");
+          const displayAmount =
+            trade.mode === "forex" ? `${trade.amount} lot` : `$${trade.amount}`;
+          row.innerHTML = `
+      <td>${trade.tgl}</td><td>${trade.pair}</td><td>${
+            trade.entry
+          }</td><td>${displayAmount}</td>
+      <td>${trade.leverage}x</td><td>${trade.entryPrice}</td><td>${
+            trade.takeProfit
+          }</td><td>${trade.stoploss}</td>
+      <td>${rr}</td>
+      <td class="${result >= 0 ? "profit" : "loss"}">${result.toFixed(2)}</td>
+      <td>${saldo.toFixed(2)}</td><td>${trade.status}</td>
+      <td>
+        <button class="btn btn-warning btn-sm me-1" onclick="editTrade(${i})" title="Edit">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteTrade(${i})" title="Delete">✕</button>
+      </td>
+    `;
+          tbody.appendChild(row);
+        });
+        const total = trades.length;
+        const winRate = total > 0 ? ((win / total) * 100).toFixed(2) : 0;
+        document.getElementById("totalTrade").textContent = total;
+        document.getElementById("winTrade").textContent = win;
+        document.getElementById("lossTrade").textContent = loss;
+        document.getElementById("winRate").textContent = winRate;
+        document.getElementById("totalPNL").textContent = totalPNL.toFixed(2);
+        document.getElementById("modalAwalDisplay").textContent =
+          saldo.toFixed(2);
+        renderChart(win, loss);
+      }
+
+      let chart;
+      function renderChart(win, loss) {
+        const ctx = document.getElementById("winLossChart").getContext("2d");
+        if (chart) chart.destroy();
+        chart = new Chart(ctx, {
+          type: "doughnut",
+          data: {
+            labels: ["Win", "Loss"],
+            datasets: [
+              { data: [win, loss], backgroundColor: ["#198754", "#dc3545"] },
+            ],
+          },
+          options: { plugins: { legend: { position: "bottom" } } },
+        });
+      }
+
+      function downloadBackupJSON() {
+        const data = {
+          modalAwal,
+          trades,
+          backupDate: new Date().toISOString(),
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], {
+          type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        const timestamp = new Date().toISOString().split("T")[0];
+        a.download = `trading-journal-${timestamp}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        alert("Backup JSON berhasil didownload!");
+      }
+
+      function downloadBackupPNG() {
+        // Hide delete buttons before capture
+        const deleteButtons = document.querySelectorAll("#journalBody button");
+        deleteButtons.forEach((btn) => (btn.style.display = "none"));
+
+        const table = document.getElementById("tableContainer");
+        html2canvas(table, {
+          scale: 2,
+          backgroundColor: "#ffffff",
+          logging: false,
+        })
+          .then((canvas) => {
+            // Show delete buttons again
+            deleteButtons.forEach((btn) => (btn.style.display = ""));
+
+            const link = document.createElement("a");
+            const timestamp = new Date().toISOString().split("T")[0];
+            link.download = `trading-journal-${timestamp}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+            alert("Backup PNG berhasil didownload!");
+          })
+          .catch((err) => {
+            deleteButtons.forEach((btn) => (btn.style.display = ""));
+            console.error("Error generating PNG:", err);
+            alert("Gagal membuat backup PNG");
+          });
+      }
+
+      function downloadBackupPDF() {
+        // Hide delete buttons before capture
+        const deleteButtons = document.querySelectorAll("#journalBody button");
+        deleteButtons.forEach((btn) => (btn.style.display = "none"));
+
+        const table = document.getElementById("tableContainer");
+        html2canvas(table, {
+          scale: 2,
+          backgroundColor: "#ffffff",
+          logging: false,
+        })
+          .then((canvas) => {
+            // Show delete buttons again
+            deleteButtons.forEach((btn) => (btn.style.display = ""));
+
+            const imgData = canvas.toDataURL("image/png");
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+              orientation: "landscape",
+              unit: "mm",
+              format: "a4",
+            });
+
+            const imgWidth = 280;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+            pdf.addImage(imgData, "PNG", 10, 10, imgWidth, imgHeight);
+
+            // Add summary info
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const startY = imgHeight + 20;
+
+            if (startY + 30 < pageHeight) {
+              pdf.setFontSize(10);
+              pdf.text(`Total Trades: ${trades.length}`, 10, startY);
+              pdf.text(
+                `Winrate: ${document.getElementById("winRate").textContent}%`,
+                10,
+                startY + 7
+              );
+              pdf.text(
+                `Total PNL: $${
+                  document.getElementById("totalPNL").textContent
+                }`,
+                10,
+                startY + 14
+              );
+              pdf.text(
+                `Current Balance: $${
+                  document.getElementById("modalAwalDisplay").textContent
+                }`,
+                10,
+                startY + 21
+              );
+              pdf.text(
+                `Backup Date: ${new Date().toLocaleString()}`,
+                10,
+                startY + 28
+              );
+            }
+
+            const timestamp = new Date().toISOString().split("T")[0];
+            pdf.save(`trading-journal-${timestamp}.pdf`);
+            alert("Backup PDF berhasil didownload!");
+          })
+          .catch((err) => {
+            deleteButtons.forEach((btn) => (btn.style.display = ""));
+            console.error("Error generating PDF:", err);
+            alert("Gagal membuat backup PDF");
+          });
+      }
+
+      updateJournal();
+
+      // Shuffle array function
+      function shuffleArray(array) {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+      }
+
+      // Get dynamic symbols from user's trades
+      function getDynamicSymbols() {
+        const userPairs = new Set();
+        const finalSymbols = [];
+
+        // ALWAYS FIRST: BTC, ETH, XAU
+        const fixedFirst = [
+          { proName: "BINANCE:BTCUSDT", title: "BTC/USDT" },
+          { proName: "BINANCE:ETHUSDT", title: "ETH/USDT" },
+          { proName: "OANDA:XAUUSD", title: "XAU/USD" },
+        ];
+
+        // Add fixed first symbols
+        fixedFirst.forEach((coin) => finalSymbols.push(coin));
+        fixedFirst.forEach((coin) => userPairs.add(coin.proName));
+
+        // Extract unique pairs from user's trades
+        const userTradeSymbols = [];
+        trades.forEach((trade) => {
+          const pair = trade.pair.toUpperCase();
+          let tvSymbol = "";
+
+          // Crypto pairs (ends with USDT)
+          if (pair.includes("USDT")) {
+            tvSymbol = `BINANCE:${pair}`;
+          }
+          // Forex pairs
+          else if (pair.includes("XAU") || pair === "GOLD") {
+            tvSymbol = "OANDA:XAUUSD";
+          } else if (pair.includes("XAG") || pair === "SILVER") {
+            tvSymbol = "OANDA:XAGUSD";
+          } else if (
+            pair.includes("EUR") ||
+            pair.includes("GBP") ||
+            pair.includes("USD") ||
+            pair.includes("JPY") ||
+            pair.includes("AUD") ||
+            pair.includes("NZD") ||
+            pair.includes("CAD") ||
+            pair.includes("CHF")
+          ) {
+            tvSymbol = `FX:${pair}`;
+          }
+
+          if (tvSymbol && !userPairs.has(tvSymbol)) {
+            userPairs.add(tvSymbol);
+            userTradeSymbols.push({
+              proName: tvSymbol,
+              title: pair,
+            });
+          }
+        });
+
+        // Add user's traded pairs (shuffled)
+        const shuffledUserTrades = shuffleArray(userTradeSymbols);
+        shuffledUserTrades.forEach((symbol) => finalSymbols.push(symbol));
+
+        // Top gainers/losers - popular volatile coins
+        const volatileCoins = [
+          { proName: "BINANCE:BNBUSDT", title: "BNB/USDT" },
+          { proName: "BINANCE:SOLUSDT", title: "SOL/USDT" },
+          { proName: "BINANCE:XRPUSDT", title: "XRP/USDT" },
+          { proName: "BINANCE:DOGEUSDT", title: "DOGE/USDT" },
+          { proName: "BINANCE:AVAXUSDT", title: "AVAX/USDT" },
+          { proName: "BINANCE:ADAUSDT", title: "ADA/USDT" },
+          { proName: "BINANCE:DOTUSDT", title: "DOT/USDT" },
+          { proName: "BINANCE:MATICUSDT", title: "MATIC/USDT" },
+          { proName: "BINANCE:LINKUSDT", title: "LINK/USDT" },
+          { proName: "BINANCE:UNIUSDT", title: "UNI/USDT" },
+          { proName: "BINANCE:ATOMUSDT", title: "ATOM/USDT" },
+          { proName: "BINANCE:LTCUSDT", title: "LTC/USDT" },
+          { proName: "BINANCE:NEARUSDT", title: "NEAR/USDT" },
+          { proName: "BINANCE:APTUSDT", title: "APT/USDT" },
+          { proName: "BINANCE:ARBUSDT", title: "ARB/USDT" },
+          { proName: "BINANCE:OPUSDT", title: "OP/USDT" },
+          { proName: "BINANCE:INJUSDT", title: "INJ/USDT" },
+          { proName: "BINANCE:SUIUSDT", title: "SUI/USDT" },
+          { proName: "BINANCE:PEPEUSDT", title: "PEPE/USDT" },
+          { proName: "BINANCE:SHIBUSDT", title: "SHIB/USDT" },
+        ];
+
+        // Shuffle volatile coins and add those not already in user pairs
+        const shuffledVolatile = shuffleArray(volatileCoins);
+        shuffledVolatile.forEach((coin) => {
+          if (!userPairs.has(coin.proName)) {
+            finalSymbols.push(coin);
+            userPairs.add(coin.proName);
+          }
+        });
+
+        // Add essential forex and indices (shuffled)
+        const essentials = [
+          { proName: "FX_IDC:EURUSD", title: "EUR/USD" },
+          { proName: "FX:GBPUSD", title: "GBP/USD" },
+          { proName: "FX:USDJPY", title: "USD/JPY" },
+          { proName: "FX:AUDUSD", title: "AUD/USD" },
+          { proName: "FX:USDCAD", title: "USD/CAD" },
+          { proName: "FX:NZDUSD", title: "NZD/USD" },
+          { proName: "FOREXCOM:SPXUSD", title: "S&P 500" },
+          { proName: "FOREXCOM:NSXUSD", title: "NASDAQ" },
+          { proName: "TVC:DXY", title: "DXY" },
+          { proName: "OANDA:XAGUSD", title: "Silver" },
+        ];
+
+        const shuffledEssentials = shuffleArray(essentials);
+        shuffledEssentials.forEach((item) => {
+          if (!userPairs.has(item.proName)) {
+            finalSymbols.push(item);
+          }
+        });
+
+        return finalSymbols;
+      }
+
+      // TradingView Ticker Tape Widget
+      function loadTradingViewWidget() {
+        // Clear existing widget
+        const container = document.querySelector(
+          ".tradingview-widget-container__widget"
+        );
+        container.innerHTML = "";
+
+        const symbols = getDynamicSymbols();
+
+        const script = document.createElement("script");
+        script.type = "text/javascript";
+        script.src =
+          "https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js";
+        script.async = true;
+        script.innerHTML = JSON.stringify({
+          symbols: symbols,
+          showSymbolLogo: true,
+          colorTheme: "light",
+          isTransparent: false,
+          displayMode: "adaptive",
+          locale: "en",
+        });
+        container.appendChild(script);
+      }
+
+      // Load widget ONLY on initial page load
+      // Ticker will continue running when switching tabs (no reset)
+      // Only refreshes when adding NEW trade or manually refreshing page
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", loadTradingViewWidget);
+      } else {
+        loadTradingViewWidget();
+      }
+    </script>
+  </body>
+</html>
